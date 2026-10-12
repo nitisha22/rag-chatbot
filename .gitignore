@@ -1,0 +1,29 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# API keys and secrets
+.env
+.env.*
+!.env.example
+
+# VS Code settings
+.vscode/
+
+# Jupyter temporary files
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# Generated data and outputs
+data/
+outputs/
+
+# Windows temporary files
+Thumbs.db
