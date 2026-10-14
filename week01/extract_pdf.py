@@ -1,56 +1,52 @@
 
 from pathlib import Path
-import sys
+import re
 
 from pypdf import PdfReader
 
 
-def extract_pdf(pdf_path: Path) -> str:
-    """Extract text from a PDF while preserving page numbers."""
-    reader = PdfReader(str(pdf_path))
-    extracted_pages = []
+BASE_DIR = Path(__file__).resolve().parent
+PDF_FILE = BASE_DIR / "documents" / "sample.pdf"
+OUTPUT_FILE = BASE_DIR / "output" / "extracted_text.txt"
 
-    for page_number, page in enumerate(reader.pages, start=1):
-        text = page.extract_text() or ""
-        extracted_pages.append(
-            f"--- Page {page_number} ---\n{text}"
-        )
 
-    return "\n\n".join(extracted_pages)
+def clean_page_text(text):
+    """Normalize whitespace in extracted PDF text."""
+    if not text:
+        return ""
+
+    # Join words separated by repeated spaces or line breaks.
+    text = re.sub(r"\s+", " ", text)
+
+    return text.strip()
 
 
 def main():
-    if len(sys.argv) != 2:
-        print(
-            'Usage: python week01\\extract_pdf.py '
-            'week01\\documents\\sample.pdf'
+    if not PDF_FILE.exists():
+        print(f"Error: PDF not found: {PDF_FILE}")
+        return
+
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    reader = PdfReader(str(PDF_FILE))
+    extracted_pages = []
+    total_characters = 0
+
+    for page_number, page in enumerate(reader.pages, start=1):
+        raw_text = page.extract_text() or ""
+        cleaned_text = clean_page_text(raw_text)
+
+        extracted_pages.append(
+            f"--- Page {page_number} ---\n{cleaned_text}"
         )
-        return
+        total_characters += len(cleaned_text)
 
-    pdf_path = Path(sys.argv[1])
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as file:
+        file.write("\n\n".join(extracted_pages))
 
-    if not pdf_path.is_file():
-        print(f"Error: PDF not found: {pdf_path.resolve()}")
-        return
-
-    try:
-        text = extract_pdf(pdf_path)
-
-        output_dir = Path("week01") / "output"
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        output_path = output_dir / "extracted_text.txt"
-        output_path.write_text(text, encoding="utf-8")
-
-        print(f"Pages processed: {len(PdfReader(str(pdf_path)).pages)}")
-        print(f"Characters extracted: {len(text)}")
-        print(f"Saved extracted text to: {output_path.resolve()}")
-
-        print("\nPreview:\n")
-        print(text[:1000] or "No extractable text found.")
-
-    except Exception as error:
-        print(f"Could not process PDF: {error}")
+    print(f"Pages processed: {len(reader.pages)}")
+    print(f"Characters extracted: {total_characters}")
+    print(f"Saved extracted text to: {OUTPUT_FILE}")
 
 
 if __name__ == "__main__":
