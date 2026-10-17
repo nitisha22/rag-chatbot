@@ -1,54 +1,88 @@
 
-from pathlib import Path
 import json
+import re
+from pathlib import Path
 
 from sentence_transformers import SentenceTransformer
 
 
-def main():
-    input_path = Path("week01/output/extracted_text.txt")
-    output_path = Path("week01/output/embeddings.json")
+BASE_DIR = Path(__file__).resolve().parent
+INPUT_FILE = BASE_DIR / "output" / "extracted_text.txt"
+OUTPUT_FILE = BASE_DIR / "output" / "embeddings.json"
 
-    if not input_path.is_file():
-        print(f"Input file not found: {input_path.resolve()}")
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+CHUNK_SIZE = 1000
+CHUNK_OVERLAP = 150
+
+
+def split_into_page_chunks(text):
+    """Split extracted text into chunks without crossing page boundaries."""
+
+    page_markers = list(re.finditer(r"--- Page (\d+) ---", text))
+    chunks = []
+
+    if not page_markers:
+        raise ValueError(
+            "No page markers found. Expected markers like --- Page 1 ---"
+        )
+
+    for i, marker in enumerate(page_markers):
+        page_number = int(marker.group(1))
+        page_start = marker.end()
+
+        if i + 1 < len(page_markers):
+            page_end = page_markers[i + 1].start()
+        else:
+            page_end = len(text)
+
+        page_text = text[page_start:page_end].strip()
+
+        start = 0
+
+        while start < len(page_text):
+            end = min(start + CHUNK_SIZE, len(page_text))
+            chunk_text = page_text[start:end].strip()
+
+            if chunk_text:
+                chunks.append({
+                    "page_number": page_number,
+                    "text": chunk_text,
+                })
+
+            if end == len(page_text):
+                break
+
+            start = end - CHUNK_OVERLAP
+
+    return chunks
+
+
+def main():
+    if not INPUT_FILE.is_file():
+        print(f"Input file not found: {INPUT_FILE}")
         return
 
-    # Read the extracted text and split it into chunks.
-    text = input_path.read_text(encoding="utf-8")
+    text = INPUT_FILE.read_text(encoding="utf-8")
+    chunks = split_into_page_chunks(text)
 
-    chunk_size = 1000
-    overlap = 150
-    chunks = []
-    start = 0
+    if not chunks:
+        print("No chunks were created.")
+        return
 
-    while start < len(text):
-        end = min(start + chunk_size, len(text))
-        chunk = text[start:end].strip()
-
-        if chunk:
-            chunks.append(chunk)
-
-        if end == len(text):
-            break
-
-        start = end - overlap
-
+    print(f"Pages detected: {len(set(c['page_number'] for c in chunks))}")
     print(f"Chunks to embed: {len(chunks)}")
 
-    # Load a pretrained embedding model.
-    model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    print(f"Loading model: {model_name}")
+    print(f"Loading model: {MODEL_NAME}")
+    model = SentenceTransformer(MODEL_NAME)
 
-    model = SentenceTransformer(model_name)
+    chunk_texts = [chunk["text"] for chunk in chunks]
 
-    # Convert each chunk into a numerical vector.
     embeddings = model.encode(
-        chunks,
+        chunk_texts,
         show_progress_bar=True,
-        convert_to_numpy=True
+        convert_to_numpy=True,
     )
 
-    # Save each chunk alongside its embedding.
     records = []
 
     for index, (chunk, vector) in enumerate(
@@ -56,24 +90,27 @@ def main():
     ):
         records.append({
             "chunk_id": index,
-            "text": chunk,
-            "embedding": vector.tolist()
+            "page_number": chunk["page_number"],
+            "text": chunk["text"],
+            "embedding": vector.tolist(),
         })
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT_FILE.write_text(
         json.dumps(records, ensure_ascii=False),
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
     print("\nEmbedding generation complete!")
-    print(f"Chunks embedded: {len(embeddings)}")
+    print(f"Chunks embedded: {len(records)}")
     print(f"Embedding dimensions: {embeddings.shape[1]}")
     print(f"Embedding array shape: {embeddings.shape}")
-    print(f"Saved to: {output_path.resolve()}")
+    print(f"Saved to: {OUTPUT_FILE}")
 
-    print("\nFirst embedding preview:")
-    print(embeddings[0][:10])
+    print("\nFirst record preview:")
+    print(f"Chunk ID: {records[0]['chunk_id']}")
+    print(f"Source page: {records[0]['page_number']}")
+    print(f"Text preview: {records[0]['text'][:200]}")
 
 
 if __name__ == "__main__":

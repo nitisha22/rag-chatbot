@@ -7,23 +7,24 @@ __pycache__/
 venv/
 env/
 
-# API keys and secrets
+# Secrets
 .env
 .env.*
 !.env.example
+__pycache__/
+*.py[cod]
 
 # VS Code settings
 .vscode/
 
-# Jupyter temporary files
-.ipynb_checkpoints/
+# PDF source documents
+week01/documents/*.pdf
+
+# Generated output
+week01/output/
 
 # Logs
 *.log
 
-# Generated data and outputs
-data/
-outputs/
-
-# Windows temporary files
+# Windows files
 Thumbs.db
