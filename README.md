@@ -1,6 +1,6 @@
-# University of Delhi RAG Chatbot
+# University RAG Chatbot
 
-A Retrieval-Augmented Generation (RAG) chatbot that answers questions about the University of Delhi's M.Sc. Informatics brochure using document retrieval and a hosted Large Language Model (LLM).
+A Retrieval-Augmented Generation (RAG) chatbot that answers questions about the University's M.Sc. brochure using document retrieval and a hosted Large Language Model (LLM).
 
 The application uses **Streamlit** for its web interface, **Sentence Transformers** to generate embeddings, **NumPy** to calculate cosine similarity, and **Groq** to generate answers from retrieved document context.
 
@@ -17,7 +17,7 @@ The application uses **Streamlit** for its web interface, **Sentence Transformer
 ## Architecture
 
 ```text
-University of Delhi Brochure (PDF)
+  University  Brochure (PDF)
               |
               v
       Text Extraction
@@ -243,7 +243,7 @@ This project demonstrates practical implementation of:
 
 ## Disclaimer
 
-This is an educational project based on a university brochure. It is not an official University of Delhi application. Refer to the university's official admissions materials for authoritative information.
+This is an educational project based on a university brochure. It is not an official University application. Refer to the university's official admissions materials for authoritative information.
 
 ## Author
 
